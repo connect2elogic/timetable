@@ -2,36 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Professional Timetable Generator</title>
+    <title>Professional School Timetable Generator</title>
     <style>
-        body { font-family: sans-serif; background: #0f172a; color: #f1f5f9; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        input { padding: 8px; border-radius: 4px; border: 1px solid #475569; background: #334155; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f1f5f9; padding: 20px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input { padding: 10px; margin: 5px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; width: 150px; }
+        button { padding: 10px 15px; cursor: pointer; border-radius: 6px; border: none; background: #06b6d4; color: white; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e293b; }
         th, td { border: 1px solid #475569; padding: 12px; text-align: center; }
         th { background: #334155; }
-        .btn { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; background: #06b6d4; color: white; }
+        .row-item { margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #334155; }
     </style>
 </head>
 <body>
     <div style="max-width: 1000px; margin: auto;">
-        <h1>🎓 Timetable Architect</h1>
+        <h1>🎓 Timetable Generator</h1>
         
         <div class="card">
-            <h3>School Setup</h3>
+            <h3>1. School Setup</h3>
             <input type="number" id="days" placeholder="Working Days">
             <input type="number" id="periods" placeholder="Periods per Day">
         </div>
 
         <div class="card">
-            <h3>Add Teacher</h3>
+            <h3>2. Teacher Workload</h3>
             <input type="text" id="tName" placeholder="Teacher Name">
-            <div id="workloadList"></div>
-            <button class="btn" onclick="addAssignment()">+ Assignment</button>
-            <button class="btn" style="background:#10b981" onclick="saveTeacher()">Save Teacher</button>
+            <div id="assignments"></div>
+            <button onclick="addAssignment()">+ Add Class & Subject</button>
+            <button style="background:#10b981" onclick="saveTeacher()">Save Teacher</button>
         </div>
 
-        <button class="btn" style="width:100%; font-size:1.2rem;" onclick="generate()">Generate Timetable</button>
+        <button style="width:100%; padding:15px; background:#6366f1; font-size:1.1rem" onclick="generateTimetable()">Generate Final Timetable</button>
         <div id="output"></div>
     </div>
 
@@ -40,48 +41,54 @@
 
         function addAssignment() {
             const div = document.createElement('div');
-            div.innerHTML = `<input class="c" placeholder="Class"> <input class="s" placeholder="Subject"> <input class="p" type="number" placeholder="Periods/Wk">`;
-            document.getElementById('workloadList').appendChild(div);
+            div.className = "row-item";
+            div.innerHTML = `<input class="cls" placeholder="Class-Div"> <input class="sub" placeholder="Subject"> <input class="hrs" type="number" placeholder="Weekly Periods">`;
+            document.getElementById('assignments').appendChild(div);
         }
 
         function saveTeacher() {
             const t = {
                 name: document.getElementById('tName').value,
-                load: Array.from(document.querySelectorAll('#workloadList > div')).map(d => ({
-                    cls: d.querySelector('.c').value,
-                    sub: d.querySelector('.s').value,
-                    hrs: parseInt(d.querySelector('.p').value)
+                load: Array.from(document.querySelectorAll('.row-item')).map(d => ({
+                    cls: d.querySelector('.cls').value,
+                    sub: d.querySelector('.sub').value,
+                    hrs: parseInt(d.querySelector('.hrs').value)
                 }))
             };
             teachers.push(t);
-            document.getElementById('workloadList').innerHTML = '';
+            document.getElementById('assignments').innerHTML = '';
             document.getElementById('tName').value = '';
-            alert("Teacher Saved!");
+            alert("Teacher data saved!");
         }
 
-        function generate() {
+        function generateTimetable() {
             const days = parseInt(document.getElementById('days').value);
             const periods = parseInt(document.getElementById('periods').value);
             const classes = [...new Set(teachers.flatMap(t => t.load.map(l => l.cls)))];
-
-            let html = `<table><tr><th>Class</th>` + Array.from({length:periods}, (_,i) => `<th>P${i+1}</th>`).join('') + `</tr>`;
-
+            
+            let html = `<h2>Master School Timetable</h2>`;
             classes.forEach(cls => {
-                html += `<tr><td><b>${cls}</b></td>`;
-                let assignments = teachers.flatMap(t => t.load.filter(l => l.cls === cls));
+                html += `<h3>Class: ${cls}</h3><table><tr><th>Day</th>` + 
+                        Array.from({length:periods}, (_,i) => `<th>Period ${i+1}</th>`).join('') + `</tr>`;
                 
-                for(let p = 0; p < periods; p++) {
-                    let task = assignments.find(a => a.hrs > 0);
-                    if(task) {
-                        html += `<td>${task.sub}<br><small>${teachers.find(t=>t.load.includes(task)).name}</small></td>`;
-                        task.hrs--;
-                    } else {
-                        html += `<td>-</td>`;
+                let classTasks = teachers.flatMap(t => t.load.filter(l => l.cls === cls));
+                
+                for(let d = 1; d <= days; d++) {
+                    html += `<tr><td>Day ${d}</td>`;
+                    for(let p = 1; p <= periods; p++) {
+                        let task = classTasks.find(t => t.hrs > 0);
+                        if(task) {
+                            html += `<td>${task.sub}</td>`;
+                            task.hrs--;
+                        } else {
+                            html += `<td>-</td>`;
+                        }
                     }
+                    html += `</tr>`;
                 }
-                html += `</tr>`;
+                html += `</table>`;
             });
-            document.getElementById('output').innerHTML = html + `</table>`;
+            document.getElementById('output').innerHTML = html;
         }
     </script>
 </body>
