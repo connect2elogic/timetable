@@ -9,6 +9,7 @@
         .container { max-width: 950px; margin: auto; }
         .card { background: var(--surface); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #334155; }
         input { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; margin-top: 0.5rem; }
+        .assignment-row { display: grid; grid-template-columns: 2fr 2fr 1fr; gap: 10px; margin-bottom: 10px; padding: 10px; border: 1px solid #334155; border-radius: 8px; }
         button { padding: 0.6rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 0.2rem; }
         .btn-add { background: var(--accent); color: white; }
         .btn-del { background: #ef4444; color: white; }
@@ -22,16 +23,15 @@
         <h1>📅 Timetable Architect</h1>
         
         <div class="card">
-            <h3>Add/Edit Teacher</h3>
+            <h3>Add Teacher Workload</h3>
             <input type="text" id="teacherName" placeholder="Teacher Name">
-            <input type="number" id="weeklyHours" placeholder="Total Weekly Periods">
-            <div id="workloadFields"></div>
-            <button class="btn-add" onclick="addField()">+ Add Assignment</button>
-            <button class="btn-add" style="background:#10b981;" onclick="saveTeacher()">Save Teacher</button>
+            <div id="workloadFields" style="margin-top:1rem;"></div>
+            <button class="btn-add" onclick="addField()">+ Add Class/Subject Assignment</button>
+            <button class="btn-add" style="background:#10b981;" onclick="saveTeacher()">Save Teacher Profile</button>
         </div>
 
         <div class="card">
-            <h3>Master Workload Registry</h3>
+            <h3>Master Registry</h3>
             <div id="displayArea"></div>
         </div>
     </div>
@@ -41,7 +41,11 @@
 
         function addField() {
             const div = document.createElement('div');
-            div.innerHTML = `<input type="text" class="c-val" placeholder="Class-Div"> <input type="text" class="s-val" placeholder="Subject">`;
+            div.className = "assignment-row";
+            div.innerHTML = `
+                <input type="text" class="c-val" placeholder="Class-Div">
+                <input type="text" class="s-val" placeholder="Subject">
+                <input type="number" class="p-val" placeholder="Periods/Wk">`;
             document.getElementById('workloadFields').appendChild(div);
         }
 
@@ -49,13 +53,18 @@
             const teacher = {
                 id: Date.now(),
                 name: document.getElementById('teacherName').value,
-                hours: document.getElementById('weeklyHours').value,
                 assignments: []
             };
-            document.querySelectorAll('#workloadFields > div').forEach(row => {
-                teacher.assignments.push({ class: row.querySelector('.c-val').value, subject: row.querySelector('.s-val').value });
+            document.querySelectorAll('.assignment-row').forEach(row => {
+                teacher.assignments.push({ 
+                    class: row.querySelector('.c-val').value, 
+                    subject: row.querySelector('.s-val').value,
+                    periods: row.querySelector('.p-val').value 
+                });
             });
             registry.push(teacher);
+            document.getElementById('teacherName').value = '';
+            document.getElementById('workloadFields').innerHTML = '';
             render();
         }
 
@@ -64,20 +73,12 @@
             render();
         }
 
-        function editTeacher(id) {
-            const t = registry.find(item => item.id === id);
-            document.getElementById('teacherName').value = t.name;
-            document.getElementById('weeklyHours').value = t.hours;
-            deleteTeacher(id); // Remove from list to allow re-saving
-        }
-
         function render() {
-            let html = `<table><tr><th>Teacher</th><th>Periods</th><th>Workload</th><th>Actions</th></tr>`;
+            let html = `<table><tr><th>Teacher</th><th>Assignments (Class | Subject | Periods/Week)</th><th>Actions</th></tr>`;
             registry.forEach(t => {
-                html += `<tr><td>${t.name}</td><td>${t.hours}</td>
-                         <td>${t.assignments.map(a => a.class + ": " + a.subject).join(', ')}</td>
+                html += `<tr><td>${t.name}</td>
+                         <td>${t.assignments.map(a => `${a.class} | ${a.subject} | <b>${a.periods} periods</b>`).join('<br>')}</td>
                          <td>
-                            <button class="btn-edit" onclick="editTeacher(${t.id})">Edit</button>
                             <button class="btn-del" onclick="deleteTeacher(${t.id})">Delete</button>
                          </td></tr>`;
             });
