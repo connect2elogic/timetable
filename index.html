@@ -2,108 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>School Timetable Architect</title>
+    <title>School Timetable Generator</title>
     <style>
         :root { --bg: #0a0e17; --surface: #131a26; --accent: #06b6d4; --text: #f8fafc; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 2rem; }
-        .container { max-width: 950px; margin: auto; }
         .card { background: var(--surface); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #334155; }
         input { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; margin-top: 0.5rem; }
-        .assignment-row { 
-            display: grid; 
-            grid-template-columns: 2fr 2fr 1.5fr auto; 
-            gap: 10px; 
-            margin-bottom: 10px; 
-            padding: 10px; 
-            background: #0f172a; 
-            border-radius: 8px; 
-            align-items: center; 
-        }
-        button { padding: 0.6rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 0.2rem; }
-        .btn-add { background: var(--accent); color: white; }
-        .btn-del { background: #ef4444; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-        th, td { border: 1px solid #334155; padding: 1rem; text-align: left; }
+        th, td { border: 1px solid #334155; padding: 10px; text-align: center; }
+        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; background: var(--accent); color: white; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📅 Timetable Architect</h1>
+        <h1>📅 Timetable Generator</h1>
         
         <div class="card">
-            <h3>Add Teacher Workload</h3>
-            <input type="text" id="teacherName" placeholder="Teacher Name">
-            <div id="workloadFields" style="margin-top:1rem;"></div>
-            <button class="btn-add" onclick="addField()">+ Add Class/Subject Assignment</button>
-            <button class="btn-add" style="background:#10b981;" onclick="saveTeacher()">Save Teacher Profile</button>
+            <h3>1. School Configuration</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                <input type="number" id="days" placeholder="Working Days (e.g. 5)">
+                <input type="number" id="periods" placeholder="Periods per Day (e.g. 8)">
+                <input type="text" id="breakAfter" placeholder="Break after period (e.g. 4)">
+            </div>
+            <button class="btn" onclick="generateGrid()" style="margin-top:1rem;">Generate Empty Timetable</button>
         </div>
 
         <div class="card">
-            <h3>Master Registry</h3>
-            <div id="displayArea"></div>
-            <button class="btn-add" style="background:#6366f1;" onclick="generatePrintable()">Generate & Print Registry</button>
+            <h3>2. Generated Timetable</h3>
+            <div id="timetableOutput"></div>
         </div>
     </div>
 
     <script>
-        let registry = [];
-
-        function addField() {
-            const div = document.createElement('div');
-            div.className = "assignment-row";
-            div.innerHTML = `
-                <input type="text" class="c-val" placeholder="Class-Div">
-                <input type="text" class="s-val" placeholder="Subject">
-                <input type="number" class="p-val" placeholder="Periods/Wk">
-                <button class="btn-del" onclick="this.parentElement.remove()">X</button>`;
-            document.getElementById('workloadFields').appendChild(div);
-        }
-
-        function saveTeacher() {
-            const tName = document.getElementById('teacherName').value;
-            if(!tName) return alert("Please enter teacher name");
+        function generateGrid() {
+            const days = document.getElementById('days').value;
+            const periods = document.getElementById('periods').value;
+            const breakAfter = parseInt(document.getElementById('breakAfter').value);
             
-            const teacher = {
-                id: Date.now(),
-                name: tName,
-                assignments: []
-            };
-            
-            document.querySelectorAll('.assignment-row').forEach(row => {
-                teacher.assignments.push({ 
-                    class: row.querySelector('.c-val').value, 
-                    subject: row.querySelector('.s-val').value,
-                    periods: row.querySelector('.p-val').value 
-                });
-            });
-            
-            registry.push(teacher);
-            document.getElementById('teacherName').value = '';
-            document.getElementById('workloadFields').innerHTML = '';
-            render();
-        }
+            let html = `<table><tr><th>Day</th>`;
+            for(let i=1; i<=periods; i++) {
+                html += `<th>P-${i}</th>`;
+                if(i === breakAfter) html += `<th>Break</th>`;
+            }
+            html += `</tr>`;
 
-        function deleteTeacher(id) {
-            registry = registry.filter(t => t.id !== id);
-            render();
-        }
-
-        function render() {
-            let html = `<table><tr><th>Teacher</th><th>Workload Details</th><th>Actions</th></tr>`;
-            registry.forEach(t => {
-                html += `<tr><td>${t.name}</td>
-                         <td>${t.assignments.map(a => `${a.class} | ${a.subject} | <b>${a.periods} periods/wk</b>`).join('<br>')}</td>
-                         <td><button class="btn-del" onclick="deleteTeacher(${t.id})">Delete</button></td></tr>`;
-            });
+            for(let d=1; d<=days; d++) {
+                html += `<tr><td>Day ${d}</td>`;
+                for(let p=1; p<=periods; p++) {
+                    html += `<td><input type="text" placeholder="Subject/Class"></td>`;
+                    if(p === breakAfter) html += `<td style="background:#334155;">BREAK</td>`;
+                }
+                html += `</tr>`;
+            }
             html += `</table>`;
-            document.getElementById('displayArea').innerHTML = html;
-        }
-
-        function generatePrintable() {
-            const win = window.open('', '_blank');
-            win.document.write(`<html><head><style>table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:10px;}</style></head>
-                <body><h1>Official Teacher Workload Registry</h1>${document.getElementById('displayArea').innerHTML}</body></html>`);
-            win.print();
+            document.getElementById('timetableOutput').innerHTML = html;
         }
     </script>
 </body>
