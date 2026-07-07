@@ -2,79 +2,87 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>School Timetable Matrix</title>
+    <title>School Timetable Architect</title>
     <style>
         :root { --bg: #0a0e17; --surface: #131a26; --accent: #06b6d4; --text: #f8fafc; }
         body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 2rem; }
         .card { background: var(--surface); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid #334155; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border: 1px solid #475569; padding: 12px; text-align: center; }
+        input { background: #1e293b; border: 1px solid #334155; padding: 0.7rem; color: white; border-radius: 5px; width: 120px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 2rem; }
+        th, td { border: 1px solid #475569; padding: 10px; text-align: center; }
         th { background: #1e293b; }
-        .grid-cell { font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <div class="container" style="max-width:1000px; margin:auto;">
-        <h1>🏫 Timetable Matrix Generator</h1>
-        
+    <div style="max-width: 1000px; margin: auto;">
+        <h1>📅 Auto-Timetable Generator</h1>
+
         <div class="card">
-            <h3>Step 1: Input Teacher Load</h3>
-            <div id="workloadRows">
-                <div class="row">
-                    <input type="text" id="tName" placeholder="Teacher">
-                    <input type="text" id="tClass" placeholder="Class (e.g. 10A)">
-                    <input type="text" id="tSub" placeholder="Subject">
-                    <input type="number" id="tPer" placeholder="Periods/Wk">
-                </div>
-            </div>
-            <button onclick="addTeacherRow()">Add Entry</button>
-            <button onclick="generateMatrix()" style="background:#06b6d4;">Create Timetable Grid</button>
+            <h3>1. School Configuration</h3>
+            <input type="number" id="inDays" placeholder="Working Days">
+            <input type="number" id="inPeriods" placeholder="Periods/Day">
         </div>
 
         <div class="card">
-            <h3>Step 2: Timetable Format</h3>
-            <div id="matrixOutput"></div>
+            <h3>2. Teacher Workload</h3>
+            <input type="text" id="tName" placeholder="Teacher Name">
+            <div id="workloadInputs"></div>
+            <button onclick="addRow()">+ Add Assignment</button>
+            <button onclick="saveTeacher()" style="background:#06b6d4;">Save Teacher</button>
         </div>
+
+        <button onclick="generateTable()" style="padding:1rem 2rem; background:#10b981; color:white; border:none; cursor:pointer;">Generate Final Timetable</button>
+
+        <div id="result"></div>
     </div>
 
     <script>
-        let data = [];
+        let teachers = [];
 
-        function addTeacherRow() {
-            const row = document.createElement('div');
-            row.innerHTML = `<input class="tName" placeholder="Teacher"> <input class="tClass" placeholder="Class"> <input class="tSub" placeholder="Subject"> <input class="tPer" placeholder="Periods/Wk">`;
-            document.getElementById('workloadRows').appendChild(row);
+        function addRow() {
+            const div = document.createElement('div');
+            div.innerHTML = `<input class="cVal" placeholder="Class"> <input class="sVal" placeholder="Subject"> <input class="pVal" type="number" placeholder="Periods/Wk">`;
+            document.getElementById('workloadInputs').appendChild(div);
         }
 
-        function generateMatrix() {
-            // Collect all inputs
-            data = [];
-            document.querySelectorAll('.row, .tName').forEach((div, i) => {
-                // Simplified collection logic
-                data.push({
-                    teacher: document.querySelectorAll('.tName')[0]?.value,
-                    class: document.querySelectorAll('.tClass')[0]?.value,
-                    subject: document.querySelectorAll('.tSub')[0]?.value,
-                    periods: parseInt(document.querySelectorAll('.tPer')[0]?.value)
+        function saveTeacher() {
+            const name = document.getElementById('tName').value;
+            const assignments = [];
+            document.querySelectorAll('.cVal').forEach((_, i) => {
+                assignments.push({
+                    class: document.querySelectorAll('.cVal')[i].value,
+                    sub: document.querySelectorAll('.sVal')[i].value,
+                    hrs: parseInt(document.querySelectorAll('.pVal')[i].value)
                 });
             });
+            teachers.push({ name, assignments });
+            alert("Teacher saved!");
+            document.getElementById('workloadInputs').innerHTML = '';
+        }
 
-            // Create Grid (Classes as Rows, Periods 1-8 as Columns)
-            let html = `<table><tr><th>Class</th><th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>P6</th><th>P7</th><th>P8</th></tr>`;
+        function generateTable() {
+            const days = document.getElementById('inDays').value;
+            const periods = document.getElementById('inPeriods').value;
             
-            // Unique Classes
-            let classes = [...new Set(data.map(d => d.class))];
-            
-            classes.forEach(cls => {
-                html += `<tr><td><b>${cls}</b></td>`;
-                for(let i=0; i<8; i++) {
-                    // Logic: Auto-fill if periods remain
-                    html += `<td class="grid-cell">${data.find(d => d.class === cls)?.subject || '-'}</td>`;
+            let html = `<table><tr><th>Class</th>`;
+            for(let p=1; p<=periods; p++) html += `<th>P${p}</th>`;
+            html += `</tr>`;
+
+            // Group by classes (unique list)
+            let allClasses = [...new Set(teachers.flatMap(t => t.assignments.map(a => a.class)))];
+
+            allClasses.forEach(cls => {
+                html += `<tr><td>${cls}</td>`;
+                for(let p=1; p<=periods; p++) {
+                    // Simple filler logic: find teacher for this class
+                    let match = teachers.find(t => t.assignments.some(a => a.class === cls));
+                    html += `<td>${match ? match.assignments.find(a => a.class === cls).sub : '-'}</td>`;
                 }
                 html += `</tr>`;
             });
+            
             html += `</table>`;
-            document.getElementById('matrixOutput').innerHTML = html;
+            document.getElementById('result').innerHTML = html;
         }
     </script>
 </body>
