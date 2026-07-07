@@ -6,10 +6,13 @@
     <style>
         :root { --bg: #0a0e17; --surface: #131a26; --accent: #06b6d4; --text: #f8fafc; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 2rem; }
-        .container { max-width: 900px; margin: auto; }
+        .container { max-width: 950px; margin: auto; }
         .card { background: var(--surface); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #334155; }
-        input, select { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; margin-top: 0.5rem; }
-        button { background: var(--accent); color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 1rem; }
+        input { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; margin-top: 0.5rem; }
+        button { padding: 0.6rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 0.2rem; }
+        .btn-add { background: var(--accent); color: white; }
+        .btn-del { background: #ef4444; color: white; }
+        .btn-edit { background: #f59e0b; color: white; }
         table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
         th, td { border: 1px solid #334155; padding: 1rem; text-align: left; }
     </style>
@@ -19,18 +22,17 @@
         <h1>📅 Timetable Architect</h1>
         
         <div class="card">
-            <h3>Add Teacher & Workload</h3>
+            <h3>Add/Edit Teacher</h3>
             <input type="text" id="teacherName" placeholder="Teacher Name">
-            <input type="number" id="weeklyHours" placeholder="Total Weekly Periods (e.g. 30)">
+            <input type="number" id="weeklyHours" placeholder="Total Weekly Periods">
             <div id="workloadFields"></div>
-            <button onclick="addField()" style="background:#475569;">+ Add Class/Subject Assignment</button>
-            <button onclick="saveTeacher()" style="background:#10b981;">Save Teacher Profile</button>
+            <button class="btn-add" onclick="addField()">+ Add Assignment</button>
+            <button class="btn-add" style="background:#10b981;" onclick="saveTeacher()">Save Teacher</button>
         </div>
 
         <div class="card">
             <h3>Master Workload Registry</h3>
             <div id="displayArea"></div>
-            <button onclick="generatePrintable()" style="background:var(--accent);">Generate & Print Timetable</button>
         </div>
     </div>
 
@@ -39,47 +41,48 @@
 
         function addField() {
             const div = document.createElement('div');
-            div.style.marginTop = "1rem";
-            div.innerHTML = `<input type="text" class="c-val" placeholder="Class-Div (e.g. 10-A)">
-                             <input type="text" class="s-val" placeholder="Subject">`;
+            div.innerHTML = `<input type="text" class="c-val" placeholder="Class-Div"> <input type="text" class="s-val" placeholder="Subject">`;
             document.getElementById('workloadFields').appendChild(div);
         }
 
         function saveTeacher() {
             const teacher = {
+                id: Date.now(),
                 name: document.getElementById('teacherName').value,
                 hours: document.getElementById('weeklyHours').value,
                 assignments: []
             };
             document.querySelectorAll('#workloadFields > div').forEach(row => {
-                teacher.assignments.push({
-                    class: row.querySelector('.c-val').value,
-                    subject: row.querySelector('.s-val').value
-                });
+                teacher.assignments.push({ class: row.querySelector('.c-val').value, subject: row.querySelector('.s-val').value });
             });
             registry.push(teacher);
-            alert("Teacher " + teacher.name + " added.");
-            // Reset fields
-            document.getElementById('teacherName').value = '';
-            document.getElementById('workloadFields').innerHTML = '';
             render();
         }
 
+        function deleteTeacher(id) {
+            registry = registry.filter(t => t.id !== id);
+            render();
+        }
+
+        function editTeacher(id) {
+            const t = registry.find(item => item.id === id);
+            document.getElementById('teacherName').value = t.name;
+            document.getElementById('weeklyHours').value = t.hours;
+            deleteTeacher(id); // Remove from list to allow re-saving
+        }
+
         function render() {
-            let html = `<table><tr><th>Teacher</th><th>Total Periods</th><th>Workload Assignments</th></tr>`;
+            let html = `<table><tr><th>Teacher</th><th>Periods</th><th>Workload</th><th>Actions</th></tr>`;
             registry.forEach(t => {
-                html += `<tr><td>${t.name}</td><td>${t.hours}</td><td>${t.assignments.map(a => a.class + ": " + a.subject).join('<br>')}</td></tr>`;
+                html += `<tr><td>${t.name}</td><td>${t.hours}</td>
+                         <td>${t.assignments.map(a => a.class + ": " + a.subject).join(', ')}</td>
+                         <td>
+                            <button class="btn-edit" onclick="editTeacher(${t.id})">Edit</button>
+                            <button class="btn-del" onclick="deleteTeacher(${t.id})">Delete</button>
+                         </td></tr>`;
             });
             html += `</table>`;
             document.getElementById('displayArea').innerHTML = html;
-        }
-
-        function generatePrintable() {
-            const printWin = window.open('', '_blank');
-            printWin.document.write(`<html><head><style>table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:10px;}</style></head>
-                <body><h1>Official School Timetable</h1>${document.getElementById('displayArea').innerHTML}</body></html>`);
-            printWin.document.close();
-            printWin.print();
         }
     </script>
 </body>
