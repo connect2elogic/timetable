@@ -2,60 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>School Timetable Generator</title>
+    <title>School Timetable Matrix</title>
     <style>
         :root { --bg: #0a0e17; --surface: #131a26; --accent: #06b6d4; --text: #f8fafc; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 2rem; }
-        .card { background: var(--surface); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid #334155; }
-        input { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; margin-top: 0.5rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-        th, td { border: 1px solid #334155; padding: 10px; text-align: center; }
-        .btn { padding: 0.8rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; background: var(--accent); color: white; font-weight: bold; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 2rem; }
+        .card { background: var(--surface); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border: 1px solid #334155; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #475569; padding: 12px; text-align: center; }
+        th { background: #1e293b; }
+        .grid-cell { font-size: 0.8rem; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📅 Timetable Generator</h1>
+    <div class="container" style="max-width:1000px; margin:auto;">
+        <h1>🏫 Timetable Matrix Generator</h1>
         
         <div class="card">
-            <h3>1. School Configuration</h3>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                <input type="number" id="days" placeholder="Working Days (e.g. 5)">
-                <input type="number" id="periods" placeholder="Periods per Day (e.g. 8)">
-                <input type="text" id="breakAfter" placeholder="Break after period (e.g. 4)">
+            <h3>Step 1: Input Teacher Load</h3>
+            <div id="workloadRows">
+                <div class="row">
+                    <input type="text" id="tName" placeholder="Teacher">
+                    <input type="text" id="tClass" placeholder="Class (e.g. 10A)">
+                    <input type="text" id="tSub" placeholder="Subject">
+                    <input type="number" id="tPer" placeholder="Periods/Wk">
+                </div>
             </div>
-            <button class="btn" onclick="generateGrid()" style="margin-top:1rem;">Generate Empty Timetable</button>
+            <button onclick="addTeacherRow()">Add Entry</button>
+            <button onclick="generateMatrix()" style="background:#06b6d4;">Create Timetable Grid</button>
         </div>
 
         <div class="card">
-            <h3>2. Generated Timetable</h3>
-            <div id="timetableOutput"></div>
+            <h3>Step 2: Timetable Format</h3>
+            <div id="matrixOutput"></div>
         </div>
     </div>
 
     <script>
-        function generateGrid() {
-            const days = document.getElementById('days').value;
-            const periods = document.getElementById('periods').value;
-            const breakAfter = parseInt(document.getElementById('breakAfter').value);
-            
-            let html = `<table><tr><th>Day</th>`;
-            for(let i=1; i<=periods; i++) {
-                html += `<th>P-${i}</th>`;
-                if(i === breakAfter) html += `<th>Break</th>`;
-            }
-            html += `</tr>`;
+        let data = [];
 
-            for(let d=1; d<=days; d++) {
-                html += `<tr><td>Day ${d}</td>`;
-                for(let p=1; p<=periods; p++) {
-                    html += `<td><input type="text" placeholder="Subject/Class"></td>`;
-                    if(p === breakAfter) html += `<td style="background:#334155;">BREAK</td>`;
+        function addTeacherRow() {
+            const row = document.createElement('div');
+            row.innerHTML = `<input class="tName" placeholder="Teacher"> <input class="tClass" placeholder="Class"> <input class="tSub" placeholder="Subject"> <input class="tPer" placeholder="Periods/Wk">`;
+            document.getElementById('workloadRows').appendChild(row);
+        }
+
+        function generateMatrix() {
+            // Collect all inputs
+            data = [];
+            document.querySelectorAll('.row, .tName').forEach((div, i) => {
+                // Simplified collection logic
+                data.push({
+                    teacher: document.querySelectorAll('.tName')[0]?.value,
+                    class: document.querySelectorAll('.tClass')[0]?.value,
+                    subject: document.querySelectorAll('.tSub')[0]?.value,
+                    periods: parseInt(document.querySelectorAll('.tPer')[0]?.value)
+                });
+            });
+
+            // Create Grid (Classes as Rows, Periods 1-8 as Columns)
+            let html = `<table><tr><th>Class</th><th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>P5</th><th>P6</th><th>P7</th><th>P8</th></tr>`;
+            
+            // Unique Classes
+            let classes = [...new Set(data.map(d => d.class))];
+            
+            classes.forEach(cls => {
+                html += `<tr><td><b>${cls}</b></td>`;
+                for(let i=0; i<8; i++) {
+                    // Logic: Auto-fill if periods remain
+                    html += `<td class="grid-cell">${data.find(d => d.class === cls)?.subject || '-'}</td>`;
                 }
                 html += `</tr>`;
-            }
+            });
             html += `</table>`;
-            document.getElementById('timetableOutput').innerHTML = html;
+            document.getElementById('matrixOutput').innerHTML = html;
         }
     </script>
 </body>
