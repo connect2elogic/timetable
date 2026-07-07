@@ -1,95 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Professional School Timetable Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #f1f5f9; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input { padding: 10px; margin: 5px; border-radius: 6px; border: 1px solid #475569; background: #334155; color: white; width: 150px; }
-        button { padding: 10px 15px; cursor: pointer; border-radius: 6px; border: none; background: #06b6d4; color: white; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1e293b; }
-        th, td { border: 1px solid #475569; padding: 12px; text-align: center; }
-        th { background: #334155; }
-        .row-item { margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #334155; }
+        body { font-family: 'IBM Plex Sans', sans-serif; }
+        h1, h2 { font-family: 'Outfit', sans-serif; }
+        @media print { .no-print { display: none; } }
     </style>
 </head>
-<body>
-    <div style="max-width: 1000px; margin: auto;">
-        <h1>🎓 Timetable Generator</h1>
-        
-        <div class="card">
-            <h3>1. School Setup</h3>
-            <input type="number" id="days" placeholder="Working Days">
-            <input type="number" id="periods" placeholder="Periods per Day">
-        </div>
+<body class="bg-slate-50 min-h-screen p-8">
+    <div id="root" class="max-w-5xl mx-auto"></div>
 
-        <div class="card">
-            <h3>2. Teacher Workload</h3>
-            <input type="text" id="tName" placeholder="Teacher Name">
-            <div id="assignments"></div>
-            <button onclick="addAssignment()">+ Add Class & Subject</button>
-            <button style="background:#10b981" onclick="saveTeacher()">Save Teacher</button>
-        </div>
+    <script type="module">
+        import React, { useState } from 'https://esm.sh/react@18';
+        import { createRoot } from 'https://esm.sh/react-dom@18/client';
 
-        <button style="width:100%; padding:15px; background:#6366f1; font-size:1.1rem" onclick="generateTimetable()">Generate Final Timetable</button>
-        <div id="output"></div>
-    </div>
+        function App() {
+            const [step, setStep] = useState(1);
+            const [config, setConfig] = useState({ days: 5, periods: 8 });
+            const [teachers, setTeachers] = useState([]);
+            const [schedule, setSchedule] = useState(null);
 
-    <script>
-        let teachers = [];
-
-        function addAssignment() {
-            const div = document.createElement('div');
-            div.className = "row-item";
-            div.innerHTML = `<input class="cls" placeholder="Class-Div"> <input class="sub" placeholder="Subject"> <input class="hrs" type="number" placeholder="Weekly Periods">`;
-            document.getElementById('assignments').appendChild(div);
-        }
-
-        function saveTeacher() {
-            const t = {
-                name: document.getElementById('tName').value,
-                load: Array.from(document.querySelectorAll('.row-item')).map(d => ({
-                    cls: d.querySelector('.cls').value,
-                    sub: d.querySelector('.sub').value,
-                    hrs: parseInt(d.querySelector('.hrs').value)
-                }))
-            };
-            teachers.push(t);
-            document.getElementById('assignments').innerHTML = '';
-            document.getElementById('tName').value = '';
-            alert("Teacher data saved!");
-        }
-
-        function generateTimetable() {
-            const days = parseInt(document.getElementById('days').value);
-            const periods = parseInt(document.getElementById('periods').value);
-            const classes = [...new Set(teachers.flatMap(t => t.load.map(l => l.cls)))];
-            
-            let html = `<h2>Master School Timetable</h2>`;
-            classes.forEach(cls => {
-                html += `<h3>Class: ${cls}</h3><table><tr><th>Day</th>` + 
-                        Array.from({length:periods}, (_,i) => `<th>Period ${i+1}</th>`).join('') + `</tr>`;
+            // Scheduling Engine
+            const generateSchedule = () => {
+                const grid = Array.from({ length: config.days }, () => 
+                    Array.from({ length: config.periods }, () => ({}))
+                );
                 
-                let classTasks = teachers.flatMap(t => t.load.filter(l => l.cls === cls));
-                
-                for(let d = 1; d <= days; d++) {
-                    html += `<tr><td>Day ${d}</td>`;
-                    for(let p = 1; p <= periods; p++) {
-                        let task = classTasks.find(t => t.hrs > 0);
-                        if(task) {
-                            html += `<td>${task.sub}</td>`;
-                            task.hrs--;
-                        } else {
-                            html += `<td>-</td>`;
+                // Simplified Greedy Assignment
+                teachers.forEach(t => {
+                    t.assignments.forEach(a => {
+                        for(let i=0; i<a.hrs && i < (config.days * config.periods); i++) {
+                            const day = Math.floor(i / config.periods);
+                            const period = i % config.periods;
+                            if (!grid[day][period][a.cls]) {
+                                grid[day][period][a.cls] = { sub: a.sub, teacher: t.name };
+                            }
                         }
-                    }
-                    html += `</tr>`;
-                }
-                html += `</table>`;
-            });
-            document.getElementById('output').innerHTML = html;
+                    });
+                });
+                setSchedule(grid);
+                setStep(3);
+            };
+
+            return (
+                <div class="bg-white p-8 rounded-sm shadow-sm border border-slate-200">
+                    {step === 1 && (
+                        <div class="space-y-6">
+                            <h1 class="text-3xl font-bold">1. School Setup</h1>
+                            <input type="number" placeholder="Days" class="border p-2 w-full" onChange={e => setConfig({...config, days: e.target.value})} />
+                            <input type="number" placeholder="Periods" class="border p-2 w-full" onChange={e => setConfig({...config, periods: e.target.value})} />
+                            <button onClick={() => setStep(2)} class="bg-black text-white px-6 py-2">Next</button>
+                        </div>
+                    )}
+                    {step === 2 && (
+                        <div class="space-y-6">
+                            <h1 class="text-3xl font-bold">2. Teacher Assignments</h1>
+                            <button onClick={() => setTeachers([...teachers, { name: '', assignments: [] }])} class="border px-4 py-2">+ Add Teacher</button>
+                            {teachers.map((t, i) => (
+                                <div key={i} class="border p-4">
+                                    <input placeholder="Teacher Name" onChange={e => {
+                                        const n = [...teachers]; n[i].name = e.target.value; setTeachers(n);
+                                    }} />
+                                    <button onClick={() => {
+                                        const n = [...teachers]; n[i].assignments.push({cls: '', sub: '', hrs: 0}); setTeachers(n);
+                                    }} class="text-sm underline ml-4">+ Assignment</button>
+                                </div>
+                            ))}
+                            <button onClick={generateSchedule} class="bg-black text-white px-6 py-2">Generate Timetable</button>
+                        </div>
+                    )}
+                    {step === 3 && schedule && (
+                        <div class="space-y-6">
+                            <h1 class="text-3xl font-bold no-print">3. Generated Matrix</h1>
+                            <table class="w-full border-collapse border">
+                                {schedule.map((day, d) => (
+                                    <tr key={d}><td class="border p-2 font-bold">Day {d+1}</td>
+                                        {day.map((p, pIdx) => <td key={pIdx} class="border p-2 text-xs">{Object.values(p)[0]?.sub || '-'}</td>)}
+                                    </tr>
+                                ))}
+                            </table>
+                            <button onClick={() => window.print()} class="no-print bg-slate-800 text-white px-6 py-2">Print PDF</button>
+                            <button onClick={() => setStep(1)} class="no-print border px-6 py-2 ml-4">Start Over</button>
+                        </div>
+                    )}
+                </div>
+            );
         }
+
+        createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
