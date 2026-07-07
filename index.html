@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timetable Gen | School Scheduling</title>
+    <style>
+        :root { --bg: #0a0e17; --surface: #131a26; --accent: #06b6d4; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 2rem; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: var(--surface); padding: 2rem; border-radius: 20px; margin-bottom: 2rem; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        input, select { background: #1e293b; border: 1px solid #334155; padding: 0.8rem; border-radius: 8px; color: white; width: 100%; }
+        button { background: var(--accent); color: white; padding: 0.8rem 2rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #334155; padding: 1rem; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 School Timetable Generator</h1>
+        
+        <div class="card">
+            <h3>Assign Period</h3>
+            <div class="form-grid">
+                <input type="text" id="classDiv" placeholder="Class-Division (e.g., 10-A)">
+                <input type="text" id="teacher" placeholder="Teacher Name">
+                <input type="text" id="subject" placeholder="Subject">
+                <input type="number" id="period" placeholder="Period Number (1-8)">
+            </div>
+            <button onclick="addAssignment()" style="margin-top:1rem;">Add Assignment</button>
+        </div>
+
+        <div class="card">
+            <h3>Weekly Schedule</h3>
+            <div id="scheduleTable"></div>
+            <button onclick="printTimetable()" style="background:#10b981; margin-top:1rem;">Print Schedule</button>
+        </div>
+    </div>
+
+    <script>
+        let schedule = [];
+
+        function addAssignment() {
+            const entry = {
+                class: document.getElementById('classDiv').value,
+                teacher: document.getElementById('teacher').value,
+                subject: document.getElementById('subject').value,
+                period: document.getElementById('period').value
+            };
+            schedule.push(entry);
+            renderTable();
+        }
+
+        function renderTable() {
+            let html = `<table><tr><th>Class</th><th>Teacher</th><th>Subject</th><th>Period</th></tr>`;
+            schedule.forEach(s => {
+                html += `<tr><td>${s.class}</td><td>${s.teacher}</td><td>${s.subject}</td><td>${s.period}</td></tr>`;
+            });
+            html += `</table>`;
+            document.getElementById('scheduleTable').innerHTML = html;
+        }
+
+        function printTimetable() {
+            let printWin = window.open('', '_blank');
+            printWin.document.write(`
+                <html><head><style>table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:10px;}</style></head>
+                <body><h1>School Timetable</h1>${document.getElementById('scheduleTable').innerHTML}</body></html>
+            `);
+            printWin.print();
+        }
+    </script>
+</body>
+</html>
